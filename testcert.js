@@ -22,13 +22,13 @@ ondescribe = function () {
                         displayName: "Test Expired Certificate",
                         description: "Tests an expired SSL certificate",
                         type: "read",
-                        parameters: {}
+                        outputs: ["Result"] // Added outputs
                     },
                     "TestUntrustedRoot": {
                         displayName: "Test Untrusted Root",
                         description: "Tests a certificate with an untrusted root",
                         type: "read",
-                        parameters: {}
+                        outputs: ["Result"] // Added outputs
                     }
                 }
             }
@@ -36,7 +36,7 @@ ondescribe = function () {
     });
 };
 
-onexecute = function ({ objectName, methodName, parameters, properties }) {
+onexecute = function ({ objectName, methodName }) {
     switch (objectName) {
         case "CertTest":
             switch (methodName) {
@@ -60,16 +60,29 @@ onexecute = function ({ objectName, methodName, parameters, properties }) {
 
 function testCertificate(url) {
     var xhr = new XMLHttpRequest();
+    
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState !== 4) return;
+        
+        if (xhr.status === 200) {
+            postResult({
+                "Result": "SUCCESS: Received response from " + url
+            });
+        } else {
+            postResult({
+                "Result": "ERROR: Failed to connect to " + url + 
+                         " - Status: " + xhr.status + 
+                         " - Response: " + xhr.responseText
+            });
+        }
+    };
+    
     try {
-        xhr.open("GET", url, false);
+        xhr.open("GET", url, true); // Changed to asynchronous
         xhr.send();
-
-        postResult({
-            "Result": "SUCCESS: Successfully connected to " + url
-        });
     } catch (error) {
         postResult({
-            "Result": "ERROR: Failed to connect to " + url + " - " + error.message
+            "Result": "ERROR: Exception occurred - " + error.message
         });
     }
 }
